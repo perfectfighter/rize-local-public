@@ -288,6 +288,7 @@ function assertInvoiceTransition(previous, next) {
 
 function assertInvoiceEntries(value, state) {
   const invoice = validateInvoice(value);
+  if (!state.clients.some(client => client.id === invoice.clientId)) throw new Error('Invoice source client does not exist.');
   const durations = new Map();
   for (const line of invoice.lines) {
     if (line.kind !== 'time') continue;
