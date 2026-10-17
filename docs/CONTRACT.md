@@ -1,4 +1,10 @@
-# Reconstruction contract
+# Original reconstruction contract (historical)
+
+This document records the initial local-only schema and bridge. The current source
+adds business, cloud, provider, audio, and updater features described in
+[EXTENSION-CONTRACT.md](EXTENSION-CONTRACT.md) and [FEATURES.md](FEATURES.md).
+Use the current source and tests for exact API behavior; the list below is not the
+complete present-day state or command surface.
 
 This is a reconstructed Windows desktop app, based on retained notes from the
 previous build. It is not the original lost source and not Rize's proprietary code.

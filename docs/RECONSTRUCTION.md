@@ -30,17 +30,32 @@ References for future review:
 
 ## Validation boundaries
 
-Final production build passed. All 61 automated tests passed in this workspace.
+The initial rebuilt source passed its renderer build and initial test suite before
+publication. The later feature expansion adds companion-service accounts and
+permissions, synchronization/conflicts, financial commands and invoices, provider
+adapters/OAuth/calendar handling, generated/local audio, MCP, and installed-update
+state/trust checks. Run `npm test` and `npm run build` on the current revision; an
+earlier test count is not a certification of newer source.
 
 Node tests exercise actual store transactions, time accounting, native sampler
-contracts with injected native calls, calendar math, and rendered Timer states.
-Vite builds the production renderer. Native helpers are not loaded during tests.
+contracts with injected native calls, calendar math, and rendered states. Cloud
+tests run an isolated SQLite-backed HTTP service and exercise authentication,
+role/tenant isolation, approved-entry privacy, synchronization versions, and team
+analytics. Provider tests inject synthetic vendor responses; they do not incur
+external API charges or establish a real provider connection. Vite builds the
+production renderer; native foreground helpers are not loaded in unit tests.
 
-Three integration tests drive genuine production React DOM input, submit, and
-click events through Linkedom and the real store. They verify exact 5.333-second
-entry approval, a real filesystem save failure that retains a manual draft and
-then succeeds on retry, and January 31 month navigation clamping to February 28.
-They simulate a DOM, not a browser or the Windows runtime.
+Integration tests drive production React DOM input, submit and click events
+through Linkedom, including real store transactions and filesystem failures.
+They cover exact short-entry approval, draft retention/retry, month navigation,
+business forms/payments, calendar/AI actions and native-bridge contracts. These
+simulate a DOM; they do not validate browser layout or Windows execution.
+
+No live hosted server, vendor account, OAuth approval, signing identity, or public
+update feed is created by automated tests. Signed installed-update behavior needs
+a real certificate, correctly configured trusted publisher, and published release
+artifacts. Generating an NSIS installer is not equivalent to signing or validating
+an installed update on Windows.
 
 The Browser plugin's JavaScript surface was not exposed in this environment.
 Earlier preview/native verification was blocked, and no alternative browser path
