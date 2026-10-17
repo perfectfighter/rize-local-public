@@ -1,0 +1,32 @@
+{
+  "name": "rize-local",
+  "productName": "Rize Local",
+  "version": "1.1.0",
+  "description": "Independent local Windows time-tracking desktop recreation",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "start": "electron .",
+    "test": "node --test",
+    "package:windows": "node scripts/package-windows.mjs"
+  },
+  "dependencies": {
+    "@fontsource/lato": "5.3.0",
+    "@paymoapp/active-window": "2.2.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-feather": "2.0.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "5.0.4",
+    "electron": "44.9.0",
+    "linkedom": "0.18.13",
+    "vite": "6.4.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
