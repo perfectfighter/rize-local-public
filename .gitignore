@@ -7,3 +7,14 @@ build-runtime/
 .DS_Store
 workspace-v1.json
 workspace-v1.json.*
+
+data/
+*.sqlite
+*.sqlite-*
+.env
+.env.*
+!.env.example
+cloud-session.json*
+workspace.json*
+.server-test-*/
+.cloud-test-*/

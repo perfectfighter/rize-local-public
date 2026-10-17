@@ -1,99 +1,171 @@
 # Rize Local
 
-An independent Windows desktop time tracker with a Rize-inspired application
-interface. This is a reconstruction from retained implementation and research
-notes after the earlier workspace was cleaned up. It is not the exact lost
-source or the official Rize application.
+An independent Windows desktop time tracker with a Rize-inspired interface and an
+optional self-hosted service for accounts, team synchronization, AI, and work
+integrations. It contains no proprietary Rize application bundle and does not use
+Rize's private backend. It is not affiliated with Rize.
 
-## Run from source
+The local tracker works without an account or API key. Cloud features need your
+own running service; AI and integrations need configured provider accounts. This
+repository is an implementation, not a claim of complete Rize product parity.
+See the [feature matrix](docs/FEATURES.md) for exact behavior and remaining limits.
 
-Use Windows x64, Node.js 22 or newer, and npm:
+## Run the desktop app
+
+Use Windows x64, Node.js **22.13 or newer**, and npm:
 
 ```sh
 npm ci
-npm run build
 npm test
+npm run build
 npm start
 ```
 
 Choose **Create my workspace** for an empty workspace or **Explore a sample
-workspace** for labeled sample records. Automatic tracking is off by default
-and cannot run in sample mode. Enable it with the power button or in Settings.
+workspace** for labeled sample records. Automatic tracking is off by default and
+cannot run in sample mode. Enable it with the power button or in Settings.
 
-Manual entries and timers can run in Electron on other desktop systems, but
-automatic foreground tracking and the portable package target Windows x64.
-`npm run dev` opens a read-only browser UI preview with sample data; it does not
+Manual entries, timers, and local data can run in Electron on other desktop
+systems; native foreground tracking and the packaged download target Windows x64.
+`npm run dev` is a read-only browser UI preview with sample data. It does not
 record or save workspace changes.
 
-## Build the Windows download
+## What is implemented
+
+- Opt-in foreground app/window collection, idle cutoff, schedules, private-window
+  redaction, exclusions, local tagging rules, and local storage.
+- Day/week/month calendars; manual entries; review, split, merge, bulk edits,
+  rule regeneration, labels, and client/project/task tagging.
+- Focus, meeting, and break timers with pause/resume, goals, extensions, and saved
+  active intervals; local noise/ambient audio and user-selected audio files.
+- Personal/team timesheets, weekly allocations/capacity, strict allocation CSV
+  import, contracts, multicurrency profitability, invoice PDF export, and manual
+  payment records.
+- Self-hosted accounts, teams, invitations, role and resource permissions,
+  versioned synchronization, explicit conflict choices, and opt-in automatic sync.
+- Configured AI chat, embedding-based tagging proposals, saved editable reports,
+  skills, recurring report routines, and a read-only MCP stdio service.
+- Explicit task imports from Linear, ClickUp, and Asana; approved-time export to
+  supported ClickUp/Asana tasks; calendar import with recurrence and timezone
+  handling; Google Calendar and Outlook OAuth with explicit primary-calendar
+  pulls when registered applications are configured. Provider setup details are in
+  [PROVIDERS.md](docs/PROVIDERS.md).
+- Portable Windows packaging and NSIS installer packaging. Update checks,
+  downloads, and installation have an implemented trust-checked path for a signed
+  installed release; the unsigned development artifacts cannot update themselves.
+
+Invoices do not email clients or charge payment methods. Vendor credentials,
+licensed music services, hosted infrastructure, production signing certificates,
+and a published update feed are not included.
+
+## Connect accounts, teams, and providers
+
+Start the companion service in a separate terminal:
 
 ```sh
-npm run build
-npm test
-npm run package:windows
+npm run server
 ```
 
-The packager uses Python 3, downloads the official pinned Electron Windows
-runtime, verifies its SHA-256 against the official manifest, checks Windows x64
-executable/addon headers, and creates `release/rize-local-windows-x64.zip`.
-Extract its entire folder and launch `RizeLocal.exe`. Keep its companion files.
-The package includes an editable source ZIP. It is an unsigned development build.
+It listens on `http://127.0.0.1:4791` and stores its SQLite database under `data/`
+by default. In the desktop's **Team** page, configure that address, register or
+sign in, and create or join a team. Review the sharing consent before synchronizing.
+An invitation produces a single-use code for a specific email; the app does not
+send the code by email. Share it using your own communication channel.
 
-The included **Build Windows desktop app** GitHub Actions workflow runs on pushes
-to `main`, pull requests, or manual dispatch. Once it passes, open the workflow
-run's Artifacts section for `rize-local-windows-x64`. Artifacts are retained for
-30 days; GitHub retains the source repository until you delete it. No release
-or public website is automatically published.
+[SELF-HOSTING.md](docs/SELF-HOSTING.md) covers durable storage, TLS, roles,
+registration, backups, and deployment. [PROVIDERS.md](docs/PROVIDERS.md) covers AI,
+provider credentials, calendars, and MCP. A local server needs no provider key until
+you enable a feature that calls that provider.
 
-## Features
+## Build the Windows downloads
 
-- Local, opt-in active app/window-title collection using a bundled Windows
-  native helper and Electron idle detection. Five-second samples, idle cutoff,
-  work schedules, sensitive-app exclusions, local rules and keyword tags.
-- Day/week/month calendars, exact timestamp editing, overlapping entry lanes,
-  manual time, linked client/project/task tags, and pending entry review.
-- Focus/meeting/break sessions with goals, targets, pause/resume/end, extension,
-  actual active intervals, and persistent session history.
-- Client rates in USD, project/task lists, search, date/status/group reports,
-  billable totals, and explicitly labeled whole-workspace CSV export.
-- Local JSON backups/import, atomic validated storage, a system tray,
-  single-instance behavior, and lock/suspend handling for automatic tracking.
+```sh
+npm ci
+npm test
+npm run build
+npm run package:windows
+npm run package:installer
+```
 
-Calendar work hours count approved intervals once, excluding overlap. Reports
-sum entry durations and use current client rates. Manual sessions create entries
-only if automatic collection was off throughout the session, preventing duplicate
-time. Breaks remain in session history but do not become work entries.
+Portable packaging requires Python 3. It downloads the pinned official Electron
+Windows runtime, verifies its SHA-256 against the official manifest, checks the
+x64 executable/native addon headers, and creates
+`release/rize-local-windows-x64.zip`. Extract the entire folder and launch
+`RizeLocal.exe`; keep its companion files. Editable source is included.
 
-Closing the window hides it to the tray; choose **Quit Rize Local** to exit.
-Running timers checkpoint to disk as paused with their actual completed intervals.
-After a restart, explicitly resume; time while the app was closed is not counted.
+Installer packaging produces a Windows x64 NSIS `.exe` under `release/`.
+These are unsigned development artifacts unless a publisher supplies signing
+credentials and matching release configuration. Do not describe an unsigned build
+as a verified commercial publisher release.
 
-## Data and scope
+The **Build Windows desktop app** GitHub Actions workflow runs tests, the renderer
+build, portable packaging, and installer packaging on Windows. Download its
+`rize-local-windows-x64` and `rize-local-windows-installer` artifacts after a
+successful run. Artifacts are retained for 30 days. CI does not automatically
+publish a GitHub Release or deploy a server.
 
-Data is saved in `workspace.json` under Electron's per-user **Rize Local** app-data
+For functional self-updates, the publisher must configure `win.publisherName` to
+match the actual Authenticode certificate, sign the NSIS installer, and publish a
+newer GitHub Release with its installer, blockmap, and matching `latest.yml` to the
+configured repository/feed. The default unsigned build has no trusted publisher;
+its update page explains that setup is required. Portable/dev builds do not install
+updates. Checks, downloads, and restart/install remain separate user actions.
+
+The explicit `npm run release:windows` command publishes only on Windows with
+`WIN_PUBLISHER_NAME`, `CSC_LINK`, `CSC_KEY_PASSWORD`, and `GH_TOKEN` configured.
+It forces code signing and uses the certificate's actual publisher identity.
+Run tests and the renderer build first. This command creates a public release;
+ordinary CI and `package:installer` do not publish one.
+
+## Time and billing behavior
+
+Calendar work hours count approved intervals once, excluding overlap. Personal
+reports/timesheets sum each saved entry interval; overlapping entries count
+individually there. Team analytics unions overlapping approved time per person/day
+in the selected timezone. These views deliberately answer different questions.
+
+Manual sessions create entries only if automatic collection was off throughout the
+session, preventing duplicate tracking. Breaks remain in session history but do not
+become work entries. Running timers checkpoint completed active intervals; after a
+restart they resume only when explicitly requested. Closed-app time is not counted.
+
+Contracts support hourly, fixed-period retainer, and retainer-plus-overage terms.
+Retainer/hybrid contracts require an end date and matching invoice period; there is
+no automatic recurrence or proration. Financial reports keep currencies separate,
+use integer minor units for money, and do not perform FX conversion. Invoices use
+UTC entry-start dates for selecting time, reserve a permanent invoice number, and
+freeze the line/rate snapshot once marked sent. Payments record money received
+outside the app. This is operational billing software, not tax determination or a
+payment gateway.
+
+## Data and privacy
+
+The desktop keeps `workspace.json` in Electron's per-user **Rize Local** app-data
 directory. Export backups in Settings before moving or replacing data. Import
-validates the workspace and asks for replacement confirmation; imported tracking
-is disabled.
+validates the workspace, asks for replacement confirmation, and disables imported
+tracking. Closing the window hides it to the tray; **Quit Rize Local** exits.
 
-No account, subscription, API key, or server is needed. The application does not
-configure analytics, outgoing cloud calls, or synchronization. Window metadata
-is allowlisted and sanitized; screenshots, keystrokes, executable paths, and URLs
-are not collected. Recognizable private-window titles are redacted; app rules can
-exclude additional sensitive windows.
+Raw app/window metadata and pending entries remain local. The app does not collect
+screenshots, keystrokes, executable paths, or URLs. Recognizable private-window
+titles are redacted, and rules can exclude additional sensitive windows. Approved
+entry descriptions may still contain sensitive text: review them before sharing.
 
-Rize's cloud AI, semantic agent, team sync, integrations, accounts, invoices, music
-service, commercial licensing, and automatic updates are not implemented. Local
-suggestions use rules and keywords. This recreation is not affiliated with Rize
-and contains no proprietary Rize application bundle.
+Cloud sync sends only reviewed descriptions, intervals, tags, and permitted team
+records. Server administrators operate the database; this is not end-to-end
+encryption. Provider tokens are encrypted in server storage with your supplied
+key. Desktop session tokens remain in the main process and are persisted only
+when platform secure storage is available. AI and provider actions require their
+visible consent and configuration; those services receive the selected work data.
 
-## Validation
+## Validation and limitations
 
-The production renderer build and all 61 automated accounting, storage,
-native-contract, renderer, and DOM/store integration tests pass in the build
-environment. See `docs/RECONSTRUCTION.md` for
-provenance and precise verification limits. Windows execution, tray/native
-collection, and visual fidelity have not been verified on a live Windows device.
-The CI workflow builds a package; it does not simulate a user's foreground activity.
+Run `npm test` for the automated accounting, storage, native-contract, renderer/DOM,
+authentication, authorization, sync, provider, calendar, audio, and updater tests.
+Provider tests use injected responses and make no billable vendor requests. CI
+builds Windows packages; it does not prove foreground collection, tray operation,
+listening experience, production signing, live OAuth, or visual fidelity on a user's
+Windows device. These require live verification before a production rollout.
 
-Dependencies are pinned by `package-lock.json`. Source assets and dependency
-licenses are listed in `THIRD-PARTY-NOTICES.md`.
+See [RECONSTRUCTION.md](docs/RECONSTRUCTION.md) for provenance and earlier
+reconstruction limits. Dependencies are pinned by `package-lock.json`; asset and
+dependency licenses are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

@@ -231,3 +231,59 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
+
+## Installed production dependency inventory
+
+The following installed versions are the production dependency graph from `package.json`,
+including transitive runtime dependencies and fonts/renderer packages. Build-only
+dependencies are excluded. Each linked notice was copied from that installed
+package’s actual license file. Original notices above are retained. The full
+license directory and machine-readable [inventory](docs/licenses/production-dependencies.json)
+are distributed with the source and packaged app.
+
+| Package | Version | Declared license | License / notice |
+| --- | --- | --- | --- |
+| @fontsource/lato | 5.3.0 | OFL-1.1 | [License text](docs/licenses/fontsource-lato-5.3.0.txt) |
+| @paymoapp/active-window | 2.2.0 | MIT | [License text](docs/licenses/paymoapp-active-window-2.2.0.txt) |
+| argparse | 2.0.1 | Python-2.0 | [License text](docs/licenses/argparse-2.0.1.txt) |
+| builder-util-runtime | 9.7.0 | MIT | [License text](docs/licenses/builder-util-runtime-9.7.0.txt) |
+| debug | 4.4.3 | MIT | [License text](docs/licenses/debug-4.4.3.txt) |
+| electron-updater | 6.8.9 | MIT | [License text](docs/licenses/electron-updater-6.8.9.txt) |
+| fs-extra | 10.1.0 | MIT | [License text](docs/licenses/fs-extra-10.1.0.txt) |
+| graceful-fs | 4.2.11 | ISC | [License text](docs/licenses/graceful-fs-4.2.11.txt) |
+| js-tokens | 4.0.0 | MIT | [License text](docs/licenses/js-tokens-4.0.0.txt) |
+| js-yaml | 4.3.2 | MIT | [License text](docs/licenses/js-yaml-4.3.2.txt) |
+| jsonfile | 6.2.1 | MIT | [License text](docs/licenses/jsonfile-6.2.1.txt) |
+| lazy-val | 1.0.5 | MIT | [Upstream metadata; no license file](docs/licenses/lazy-val-1.0.5.txt) |
+| lodash.escaperegexp | 4.1.2 | MIT | [License text](docs/licenses/lodash.escaperegexp-4.1.2.txt) |
+| lodash.isequal | 4.5.0 | MIT | [License text](docs/licenses/lodash.isequal-4.5.0.txt) |
+| loose-envify | 1.4.0 | MIT | [License text](docs/licenses/loose-envify-1.4.0.txt) |
+| ms | 2.1.3 | MIT | [License text](docs/licenses/ms-2.1.3.txt) |
+| node-gyp-build | 4.8.4 | MIT | [License text](docs/licenses/node-gyp-build-4.8.4.txt) |
+| node-ical | 0.27.3 | Apache-2.0 | [License text](docs/licenses/node-ical-0.27.3.txt) |
+| object-assign | 4.1.1 | MIT | [License text](docs/licenses/object-assign-4.1.1.txt) |
+| prop-types | 15.8.1 | MIT | [License text](docs/licenses/prop-types-15.8.1.txt) |
+| react | 19.2.0 | MIT | [License text](docs/licenses/react-19.2.0.txt) |
+| react-dom | 19.2.0 | MIT | [License text](docs/licenses/react-dom-19.2.0.txt) |
+| react-feather | 2.0.10 | MIT | [License text](docs/licenses/react-feather-2.0.10.txt) |
+| react-is | 16.13.1 | MIT | [License text](docs/licenses/react-is-16.13.1.txt) |
+| rrule-temporal | 2.2.8 | MIT | [License text](docs/licenses/rrule-temporal-2.2.8.txt) |
+| sax | 1.6.1 | BlueOak-1.0.0 | [License text](docs/licenses/sax-1.6.1.txt) |
+| scheduler | 0.27.0 | MIT | [License text](docs/licenses/scheduler-0.27.0.txt) |
+| semver | 7.7.4 | ISC | [License text](docs/licenses/semver-7.7.4.txt) |
+| temporal-polyfill | 1.0.6 | MIT | [License text](docs/licenses/temporal-polyfill-1.0.6.txt) |
+| temporal-spec | 1.0.1 | Apache-2.0 | [License text](docs/licenses/temporal-spec-1.0.1.txt) |
+| temporal-utils | 1.0.3 | MIT | [License text](docs/licenses/temporal-utils-1.0.3.txt) |
+| tiny-typed-emitter | 2.1.0 | MIT | [License text](docs/licenses/tiny-typed-emitter-2.1.0.txt) |
+| universalify | 2.0.1 | MIT | [License text](docs/licenses/universalify-2.0.1.txt) |
+
+`lazy-val` 1.0.5 declares MIT in its upstream `package.json` but its installed
+archive supplies no standalone license or copyright notice. Its exact relevant
+metadata is preserved in the linked file rather than inventing attribution.
+
+Electron is the packaged application runtime rather than an npm production
+dependency here. The official Electron runtime’s `LICENSE` and
+`LICENSES.chromium.html` must accompany the executable, covering Electron, Chromium,
+Node.js and their included components. NSIS packaging and electron-builder are
+build tools, not included in the production npm graph above. Their packaging
+outputs retain their own runtime/installer notices as supplied by those tools.
