@@ -9,10 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,12 +28,16 @@ jobs:
           python-version: '3.x'
       - name: Install pinned dependencies
         run: npm ci
-      - name: Unit tests
+      - name: Test desktop and companion service
         run: npm test
-      - name: Production renderer
+      - name: Build production renderer
         run: npm run build
       - name: Package portable Windows x64 app
         run: npm run package:windows
+      - name: Package unsigned Windows NSIS installer
+        run: npm run package:installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - name: Upload portable build
         uses: actions/upload-artifact@v4
         with:
@@ -37,5 +45,15 @@ jobs:
           path: |
             release/rize-local-windows-x64.zip
             release/rize-local-windows-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload installer build
+        uses: actions/upload-artifact@v4
+        with:
+          name: rize-local-windows-installer
+          path: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
           if-no-files-found: error
           retention-days: 30
