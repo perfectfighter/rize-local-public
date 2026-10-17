@@ -1,14 +1,18 @@
 'use strict';
-const { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, powerMonitor, session, Tray } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, powerMonitor, safeStorage, session, shell, Tray } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { fileURLToPath } = require('node:url');
 const { createStore, toCsv } = require('./store.cjs');
 const { createTrackingEngine } = require('./tracking-engine.cjs');
 const { createSampler } = require('./native-window.cjs');
+const { randomUUID } = require('node:crypto');
+const { createCloudClient } = require('./cloud-client.cjs');
+const { financialSummary, invoiceHtml } = require('./business.cjs');
+const { createUpdates } = require('./updates.cjs');
 
 app.setName('Rize Local');
-let mainWindow, tray, store, sampler, checkpointInterval;
+let mainWindow, tray, store, sampler, checkpointInterval, cloudClient, updates, cloudInterval;
 let quitting = false;
 let suspended = false;
 let locked = false;
@@ -131,8 +135,9 @@ function secureSession() {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
   session.defaultSession.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, callback) => {
-    // This local app has no network features. Only built frontend files and inline images are needed.
-    const allowed = allowedFile(details.url) || details.url.startsWith('data:image/');
+    // Renderer network access stays blocked. Authorized service requests run in
+    // the main process through the narrow cloud IPC command allowlist.
+    const allowed = allowedFile(details.url) || details.url.startsWith('data:image/') || (details.resourceType === 'media' && details.url.startsWith('blob:'));
     callback({ cancel: !allowed });
   });
   session.defaultSession.on('will-download', event => event.preventDefault());
@@ -199,10 +204,51 @@ function registerIpc() {
     }
     flushActivity();
     engine.reset();
+    if (['workspace.create', 'workspace.demo'].includes(command.type)) cloudClient.pauseSync();
     const result = store.mutate(command);
     publishState();
     reconcileTracking();
     return result;
+  });
+  handle('rize:cloud', async command => {
+    if (!command || typeof command !== 'object' || JSON.stringify(command).length > 4 * 1024 * 1024) throw new Error('Invalid cloud command.');
+    if (command.action === 'sync') { flushActivity(); engine.reset(); }
+    const result = await cloudClient.execute(command);
+    if (command.action === 'integrations.oauth.start') {
+      const target = new URL(result.result?.authorizationUrl || '');
+      const google = target.hostname === 'accounts.google.com' && target.pathname === '/o/oauth2/v2/auth';
+      const microsoft = target.hostname === 'login.microsoftonline.com' && /^\/[a-zA-Z0-9.-]+\/oauth2\/v2\.0\/authorize$/.test(target.pathname);
+      if (target.protocol !== 'https:' || target.port || target.username || target.password || (!google && !microsoft)) throw new Error('The server returned an unsupported authorization address.');
+      await shell.openExternal(target.href);
+    }
+    if (result.workspace) publishState();
+    return result;
+  });
+  handle('rize:business-report', query => financialSummary(store.getState(), query || {}));
+  handle('rize:invoice-pdf', async payload => {
+    const invoice = store.getState().business.invoices.find(item => item.id === payload?.id);
+    if (!invoice) throw new Error('This invoice no longer exists.');
+    const selected = await dialog.showSaveDialog(mainWindow, { title: 'Export invoice PDF', defaultPath: `${String(invoice.number || 'invoice').replace(/[^a-zA-Z0-9_-]/g, '-')}.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+    if (selected.canceled || !selected.filePath) return { canceled: true };
+    const isolated = session.fromPartition(`invoice-${randomUUID()}`);
+    isolated.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+    isolated.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, callback) => callback({ cancel: !details.url.startsWith('data:text/html') }));
+    const printWindow = new BrowserWindow({ show: false, webPreferences: { session: isolated, sandbox: true, contextIsolation: true, nodeIntegration: false, javascript: false } });
+    try {
+      await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(invoiceHtml(invoice))}`);
+      const bytes = await printWindow.webContents.printToPDF({ printBackground: true, pageSize: 'A4' });
+      fs.writeFileSync(selected.filePath, bytes, { mode: 0o600 });
+      return { canceled: false, path: selected.filePath };
+    } finally { printWindow.destroy(); }
+  });
+  handle('rize:updates', async action => {
+    if (!['status', 'check', 'download', 'install'].includes(action)) throw new Error('Invalid update action.');
+    if (action === 'install') {
+      if (updates.status().state !== 'downloaded') throw new Error('Download and verify an update before installing.');
+      flushActivity(); store.flush(); quitting = true;
+      try { return updates.install(); } catch (error) { quitting = false; throw error; }
+    }
+    return updates[action]();
   });
   handle('rize:window', action => {
     if (!['minimize', 'maximize', 'close'].includes(action)) throw new Error('Invalid window action.');
@@ -241,9 +287,13 @@ function registerIpc() {
       buttons: ['Cancel', 'Replace workspace'], defaultId: 0, cancelId: 0, noLink: true,
     });
     if (answer.response !== 1) return { canceled: true };
+    cloudClient.pauseSync();
     stopNative();
     // Backups never opt someone into tracking merely by being imported.
     if (value && value.settings) value.settings.trackingEnabled = false;
+    // Import is a separate local branch; it cannot infer remote deletions from
+    // records absent in an older backup.
+    if (value && typeof value === 'object') value.workspaceId = randomUUID();
     const imported = store.importData(value);
     storageFailed = false;
     publishState();
@@ -259,6 +309,10 @@ else {
     try {
       if (!fs.existsSync(entryPath)) throw new Error('Build the frontend first with npm run build.');
       store = createStore({ file: path.join(app.getPath('userData'), 'workspace.json') });
+      cloudClient = createCloudClient({ file: path.join(app.getPath('userData'), 'cloud-session.json'), store, secureStorage: safeStorage, onChange(cloud) { status.cloud = cloud; publishStatus(); } });
+      status.cloud = cloudClient.status();
+      updates = createUpdates({ app, send(value) { status.updates = value; publishStatus(); } });
+      status.updates = updates.status();
       secureSession();
       registerIpc();
       createWindow();
@@ -273,6 +327,12 @@ else {
         catch (error) { failTracking(error); }
       }, 15_000);
       checkpointInterval.unref();
+      cloudInterval = setInterval(async () => {
+        if (!cloudClient.status().autoSync) return;
+        try { flushActivity(); engine.reset(); await cloudClient.execute({ action: 'sync', payload: { consent: true } }); publishState(); }
+        catch (error) { status.cloud = { ...cloudClient.status(), message: error.message }; publishStatus(); }
+      }, 60_000);
+      cloudInterval.unref();
       reconcileTracking();
     } catch (error) {
       dialog.showErrorBox('Rize Local could not start', `${error.message}\n\nExisting workspace files have been preserved.`);
@@ -285,6 +345,10 @@ else {
   app.on('before-quit', () => {
     quitting = true;
     if (checkpointInterval) clearInterval(checkpointInterval);
+    if (cloudInterval) clearInterval(cloudInterval);
+    updates?.close();
+    try { cloudClient?.pauseSync(); }
+    catch (error) { console.error('Cloud synchronization could not be paused:', error.message); }
     try { stopNative(); if (store) store.flush(); }
     catch (error) { console.error('Workspace could not be saved:', error.message); }
   });

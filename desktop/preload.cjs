@@ -18,4 +18,8 @@ contextBridge.exposeInMainWorld('rize', Object.freeze({
   windowAction: action => invoke('rize:window', action),
   exportData: format => invoke('rize:export', format),
   importData: () => invoke('rize:import'),
+  cloud: (action, payload = {}) => invoke('rize:cloud', { action, payload }),
+  businessReport: query => invoke('rize:business-report', query),
+  invoicePdf: payload => invoke('rize:invoice-pdf', payload),
+  updates: action => invoke('rize:updates', action),
 }));

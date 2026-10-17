@@ -3,6 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const { isDeepStrictEqual } = require('node:util');
+const { defaultBusiness, validateBusiness, applyBusinessCommand } = require('./business.cjs');
 
 const copy = value => structuredClone(value);
 const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
@@ -65,13 +67,25 @@ function keywords(value = []) {
   return [...new Set(parts.map(item => text(item, 'Keyword', 120)).filter(Boolean))];
 }
 
+function externalMetadata(value) {
+  const externalUrl = text(value.externalUrl ?? '', 'External URL', 2000);
+  if (externalUrl) {
+    let url;
+    try { url = new URL(externalUrl); } catch { throw new Error('External URL must be a valid HTTPS URL.'); }
+    if (url.protocol !== 'https:' || url.username || url.password) throw new Error('External URL must use HTTPS without credentials.');
+  }
+  return { externalId: text(value.externalId ?? '', 'External ID', 300), externalProvider: text(value.externalProvider ?? '', 'External provider', 80), externalUrl };
+}
+
 function defaults() {
   return {
     schemaVersion: 1,
+    workspaceId: randomUUID(),
     onboarded: false,
     demo: false,
     settings: { displayName: 'You', trackingEnabled: false, idleSeconds: 300, scheduleEnabled: false, scheduleStart: '09:00', scheduleEnd: '18:00', workDays: [1, 2, 3, 4, 5] },
     entries: [], clients: [], projects: [], tasks: [], rules: [], sessions: [], timer: null,
+    business: defaultBusiness(), sharedIds: { clients: [], projects: [], tasks: [], entries: [], contracts: [], allocations: [], invoices: [] },
   };
 }
 
@@ -131,6 +145,9 @@ function normalizeEntry(value, state) {
     category: text(value.category ?? 'neutral', 'Category', 80),
     ...links(value, state),
     billable: boolean(value.billable ?? false, 'Billable'),
+    labelIds: [...new Set(list(value.labelIds ?? [], 'Entry labels', 100).map(labelId => id(labelId, 'Label ID')))],
+    ...externalMetadata(value),
+    externalSource: text(value.externalSource ?? '', 'External source', 80),
   };
 }
 
@@ -198,6 +215,7 @@ function validateSnapshot(value) {
   object(value, 'Workspace');
   if (value.schemaVersion !== 1) throw new Error('Unsupported workspace schema version.');
   const state = defaults();
+  state.workspaceId = value.workspaceId === undefined ? state.workspaceId : id(value.workspaceId, 'Workspace ID');
   state.onboarded = boolean(value.onboarded, 'Onboarding flag');
   state.demo = boolean(value.demo, 'Sample workspace flag');
   state.settings = normalizeSettings(value.settings);
@@ -209,12 +227,12 @@ function validateSnapshot(value) {
   state.projects = unique(list(value.projects, 'Projects', 5000).map(item => {
     object(item, 'Project');
     const linked = links({ clientId: item.clientId }, state);
-    return { id: id(item.id), name: text(item.name, 'Project name', 200, false), clientId: linked.clientId, keywords: keywords(item.keywords) };
+    return { id: id(item.id), name: text(item.name, 'Project name', 200, false), clientId: linked.clientId, keywords: keywords(item.keywords), ...externalMetadata(item) };
   }), 'project');
   state.tasks = unique(list(value.tasks, 'Tasks', 10000).map(item => {
     object(item, 'Task');
     const linked = links({ clientId: item.clientId, projectId: item.projectId }, state);
-    return { id: id(item.id), name: text(item.name, 'Task name', 200, false), clientId: linked.clientId, projectId: linked.projectId, keywords: keywords(item.keywords) };
+    return { id: id(item.id), name: text(item.name, 'Task name', 200, false), clientId: linked.clientId, projectId: linked.projectId, keywords: keywords(item.keywords), done: boolean(item.done ?? false, 'Task complete'), ...externalMetadata(item) };
   }), 'task');
   state.rules = unique(list(value.rules ?? [], 'Rules', 5000).map(item => {
     object(item, 'Rule');
@@ -223,6 +241,13 @@ function validateSnapshot(value) {
   state.entries = unique(list(value.entries, 'Entries').map(item => normalizeEntry(item, state)), 'entry');
   state.sessions = unique(list(value.sessions, 'Sessions', 10000).map(item => normalizeSession(item, state)), 'session');
   state.timer = normalizeTimer(value.timer, state);
+  state.business = validateBusiness(value.business, state);
+  const labelIds = new Set(state.business.labels.map(label => label.id));
+  if (state.entries.some(entry => entry.labelIds.some(labelId => !labelIds.has(labelId)))) throw new Error('An entry label does not exist.');
+  if (value.sharedIds !== undefined) {
+    object(value.sharedIds, 'Shared record IDs');
+    for (const kind of Object.keys(state.sharedIds)) state.sharedIds[kind] = [...new Set(list(value.sharedIds[kind] ?? [], 'Shared record IDs').map(item => id(item)))];
+  }
   return state;
 }
 
@@ -284,16 +309,17 @@ function modifyEntity(state, kind, payload) {
   const value = { ...previous, ...payload, id: itemId };
   let entity;
   if (kind === 'client') entity = { id: itemId, name: text(value.name, 'Client name', 200, false), hourlyRate: number(value.hourlyRate ?? 0, 'Hourly rate', 0, 1000000) };
-  if (kind === 'project') entity = { id: itemId, name: text(value.name, 'Project name', 200, false), clientId: links({ clientId: value.clientId }, state).clientId, keywords: keywords(value.keywords) };
+  if (kind === 'project') entity = { id: itemId, name: text(value.name, 'Project name', 200, false), clientId: links({ clientId: value.clientId }, state).clientId, keywords: keywords(value.keywords), ...externalMetadata(value) };
   if (kind === 'task') {
     const linked = links({ clientId: value.clientId, projectId: value.projectId }, state);
-    entity = { id: itemId, name: text(value.name, 'Task name', 200, false), clientId: linked.clientId, projectId: linked.projectId, keywords: keywords(value.keywords) };
+    entity = { id: itemId, name: text(value.name, 'Task name', 200, false), clientId: linked.clientId, projectId: linked.projectId, keywords: keywords(value.keywords), done: boolean(value.done ?? false, 'Task complete'), ...externalMetadata(value) };
   }
   if (kind === 'rule') entity = { id: itemId, name: text(value.name, 'Rule name', 200, false), keyword: text(value.keyword, 'Rule keyword', 200, false), action: choice(value.action ?? 'productive', ACTIONS, 'Rule action'), ...links(value, state) };
   if (index >= 0) state[plural][index] = entity;
   else state[plural].push(entity);
   if (kind === 'project') {
     for (const item of [...state.tasks, ...state.rules, ...state.entries, ...state.sessions, ...(state.timer ? [state.timer] : [])]) if (item.projectId === itemId) item.clientId = entity.clientId;
+    for (const item of state.business.contracts) if (item.projectId === itemId) item.clientId = entity.clientId;
   }
   if (kind === 'task') {
     for (const item of [...state.rules, ...state.entries, ...state.sessions, ...(state.timer ? [state.timer] : [])]) if (item.taskId === itemId) Object.assign(item, { projectId: entity.projectId, clientId: entity.clientId });
@@ -308,6 +334,68 @@ function deleteEntity(state, kind, payload) {
   if (kind === 'rule') return;
   const field = `${kind}Id`;
   for (const item of [...state.projects, ...state.tasks, ...state.rules, ...state.entries, ...state.sessions, ...(state.timer ? [state.timer] : [])]) if (item[field] === itemId) item[field] = '';
+  if (kind === 'client') {
+    state.business.clientTerms = state.business.clientTerms.filter(item => item.clientId !== itemId);
+    state.business.contracts = state.business.contracts.filter(item => item.clientId !== itemId);
+  }
+  if (kind === 'project') {
+    state.business.contracts = state.business.contracts.filter(item => item.projectId !== itemId);
+    state.business.allocations = state.business.allocations.filter(item => item.projectId !== itemId);
+  }
+}
+
+function assertUninvoiced(state, ids) {
+  const selected = new Set(ids);
+  if (state.business.invoices.some(invoice => invoice.status !== 'void' && invoice.lines.some(line => selected.has(line.entryId)))) throw new Error('An entry belongs to an active invoice. Void that invoice before editing the entry.');
+}
+
+function advancedEntry(state, type, payload) {
+  if (type === 'entry.split') {
+    const target = state.entries.find(entry => entry.id === id(payload.id));
+    if (!target) throw new Error('The time entry does not exist.');
+    assertUninvoiced(state, [target.id]);
+    const at = iso(payload.at, 'Split time');
+    if (Date.parse(at) <= Date.parse(target.start) || Date.parse(at) >= Date.parse(target.end)) throw new Error('Split time must be inside the entry.');
+    const index = state.entries.indexOf(target);
+    state.entries.splice(index, 1, normalizeEntry({ ...target, id: randomUUID(), end: at }, state), normalizeEntry({ ...target, id: randomUUID(), start: at }, state));
+    return true;
+  }
+  if (type === 'entry.merge' || type === 'entry.bulk') {
+    const ids = [...new Set(list(payload.ids, 'Selected entries', 1000).map(value => id(value)))];
+    if (!ids.length || (type === 'entry.merge' && ids.length < 2)) throw new Error('Select the required time entries.');
+    const selected = ids.map(value => { const result = state.entries.find(entry => entry.id === value); if (!result) throw new Error('A selected time entry does not exist.'); return result; });
+    assertUninvoiced(state, ids);
+    if (type === 'entry.bulk') {
+      object(payload.patch, 'Bulk entry changes');
+      const allowed = ['description', 'clientId', 'projectId', 'taskId', 'status', 'category', 'billable', 'labelIds'];
+      if (Object.keys(payload.patch).some(key => !allowed.includes(key))) throw new Error('Bulk changes contain an unsupported field.');
+      for (const entry of selected) state.entries[state.entries.indexOf(entry)] = normalizeEntry({ ...entry, ...payload.patch }, state);
+    } else {
+      selected.sort((a, b) => a.start.localeCompare(b.start));
+      const fields = ['clientId', 'projectId', 'taskId', 'status', 'source', 'category', 'billable', 'app', 'title', 'externalId', 'externalSource'];
+      const first = selected[0];
+      for (let index = 1; index < selected.length; index++) {
+        if (Date.parse(selected[index - 1].end) !== Date.parse(selected[index].start)) throw new Error('Merged entries must be exactly contiguous, without gaps or overlaps.');
+        if (fields.some(field => selected[index][field] !== first[field]) || JSON.stringify([...selected[index].labelIds].sort()) !== JSON.stringify([...first.labelIds].sort())) throw new Error('Merged entries must have the same tags, status, source, application, and labels.');
+      }
+      const merged = normalizeEntry({ ...first, id: randomUUID(), end: selected.at(-1).end, description: [...new Set(selected.map(entry => entry.description).filter(Boolean))].join('\n') }, state);
+      state.entries = state.entries.filter(entry => !ids.includes(entry.id));
+      state.entries.push(merged);
+    }
+    return true;
+  }
+  if (type === 'entry.regenerate') {
+    const entry = state.entries.find(item => item.id === id(payload.id));
+    if (!entry) throw new Error('The time entry does not exist.');
+    assertUninvoiced(state, [entry.id]);
+    const haystack = `${entry.app}\n${entry.title}\n${entry.description}`.toLocaleLowerCase();
+    const rule = state.rules.find(item => haystack.includes(item.keyword.toLocaleLowerCase()));
+    const patch = rule ? { category: rule.action, clientId: rule.clientId, projectId: rule.projectId, taskId: rule.taskId, ...(rule.action === 'exclude' ? { status: 'pending' } : {}) } : {};
+    const matchingLabels = state.business.labels.filter(label => label.keywords.some(keyword => haystack.includes(keyword.toLocaleLowerCase()))).map(label => label.id);
+    state.entries[state.entries.indexOf(entry)] = normalizeEntry({ ...entry, ...patch, labelIds: [...new Set([...entry.labelIds, ...matchingLabels])] }, state);
+    return true;
+  }
+  return false;
 }
 
 function applyCommand(state, command, timestamp) {
@@ -327,6 +415,9 @@ function applyCommand(state, command, timestamp) {
     if (state.timer && state.settings.trackingEnabled) state.timer.autoCollected = true;
     return state;
   }
+  const businessResult = applyBusinessCommand(state, { type, payload }, timestamp);
+  if (businessResult) return businessResult;
+  if (advancedEntry(state, type, payload)) return state;
   const entityCommand = /^(client|project|task|rule)\.(upsert|delete)$/.exec(type);
   if (entityCommand) {
     (entityCommand[2] === 'upsert' ? modifyEntity : deleteEntity)(state, entityCommand[1], payload);
@@ -335,6 +426,7 @@ function applyCommand(state, command, timestamp) {
   if (type === 'entry.upsert') {
     const entryId = payload.id ? id(payload.id) : randomUUID();
     const index = state.entries.findIndex(entry => entry.id === entryId);
+    if (index >= 0) assertUninvoiced(state, [entryId]);
     const value = normalizeEntry({ ...(index >= 0 ? state.entries[index] : {}), ...payload, id: entryId }, state);
     if (index >= 0) state.entries[index] = value;
     else state.entries.push(value);
@@ -343,6 +435,7 @@ function applyCommand(state, command, timestamp) {
   if (type === 'entry.delete' || type === 'entry.review') {
     const index = state.entries.findIndex(entry => entry.id === id(payload.id));
     if (index < 0) throw new Error('The time entry does not exist.');
+    assertUninvoiced(state, [state.entries[index].id]);
     if (type === 'entry.delete') state.entries.splice(index, 1);
     else state.entries[index].status = choice(payload.status, ['pending', 'approved'], 'Entry status');
     return state;
@@ -378,7 +471,7 @@ function applyCommand(state, command, timestamp) {
       delete session.status;
       delete session.resumedAt;
       state.sessions.push(normalizeSession(session, state));
-      if (!timer.autoCollected) {
+      if (!timer.autoCollected && timer.kind !== 'break') {
         const segments = timer.segments.flatMap(splitAtMidnight);
         segments.forEach((segment, index) => state.entries.push(normalizeEntry({ ...segment, id: `${timer.id}:segment:${index}`, description: timer.goal || `${timer.kind[0].toUpperCase()}${timer.kind.slice(1)} session`, app: 'Rize Local', title: timer.goal, status: 'approved', source: 'timer', category: timer.kind, clientId: timer.clientId, projectId: timer.projectId, taskId: timer.taskId, billable: false }, state)));
       }
@@ -470,6 +563,66 @@ function createStore({ file, now = Date.now } = {}) {
         else draft.entries.push(entry);
       }
       if (draft.timer && draft.settings.trackingEnabled) draft.timer.autoCollected = true;
+      return commit(draft, timestamp());
+    },
+    mergeShared(records) {
+      const draft = copy(state);
+      const ordered = list(records, 'Shared records', 50000).map(record => {
+        object(record, 'Shared record');
+        const kind = choice(record.kind, ['clients', 'projects', 'tasks', 'entries', 'contracts', 'allocations', 'invoices', 'skills', 'routines', 'reports', 'context'], 'Shared kind');
+        return { ...record, kind, id: id(record.id), deleted: boolean(record.deleted ?? false, 'Deleted flag') };
+      });
+      const localKinds = ['clients', 'projects', 'tasks', 'entries', 'contracts', 'allocations', 'invoices'];
+      const incoming = ordered.filter(record => localKinds.includes(record.kind));
+      const rank = record => localKinds.indexOf(record.kind);
+      for (const record of incoming.filter(record => !record.deleted).sort((a, b) => rank(a) - rank(b))) {
+        object(record.data, 'Shared record data');
+        let data = { ...record.data, id: record.id };
+        const items = ['contracts', 'allocations', 'invoices'].includes(record.kind) ? draft.business[record.kind] : draft[record.kind];
+        const existing = items.find(item => item.id === record.id);
+        if (record.kind === 'entries') {
+          // Native window metadata and unreviewed activity never come from or get overwritten by team sync.
+          if (existing?.status === 'pending') continue;
+          const safe = { ...(existing ?? {}), ...data, status: 'approved', app: existing?.app ?? 'Cloud sync', title: existing?.title ?? '', source: ['manual', 'automatic', 'timer'].includes(data.source) ? data.source : existing?.source ?? 'manual' };
+          const value = normalizeEntry(safe, draft);
+          if (existing) items[items.indexOf(existing)] = value; else items.push(value);
+        } else if (['clients', 'projects', 'tasks'].includes(record.kind)) {
+          modifyEntity(draft, record.kind.slice(0, -1), data);
+        } else {
+          if (record.kind === 'invoices') data = validateBusiness({ ...draft.business, invoices: [data], nextInvoiceNumber: Math.max(draft.business.nextInvoiceNumber, (data.sequence ?? 0) + 1) }, draft).invoices[0];
+          if (record.kind === 'invoices' && existing && existing.status !== 'draft') {
+            const immutable = value => Object.fromEntries(Object.entries(value).filter(([key]) => !['status', 'payments', 'paidMinor', 'outstandingMinor', 'voidReason'].includes(key)));
+            if (!isDeepStrictEqual(immutable(existing), immutable(data))) throw new Error('A synchronized sent invoice cannot change its frozen accounting fields.');
+            if (data.status === 'draft') throw new Error('A synchronized sent invoice cannot become a draft.');
+            if (existing.status === 'void' && data.status !== 'void') throw new Error('A synchronized void invoice cannot be reopened.');
+            if (existing.payments.some(payment => !isDeepStrictEqual(payment, data.payments.find(item => item.id === payment.id)))) throw new Error('A synchronized invoice cannot remove or rewrite recorded payments.');
+          }
+          if (existing) items[items.indexOf(existing)] = data; else items.push(data);
+        }
+        if (!draft.sharedIds[record.kind].includes(record.id)) draft.sharedIds[record.kind].push(record.id);
+      }
+      for (const record of incoming.filter(record => record.deleted).sort((a, b) => rank(b) - rank(a))) {
+        if (!draft.sharedIds[record.kind].includes(record.id)) continue;
+        const items = ['contracts', 'allocations', 'invoices'].includes(record.kind) ? draft.business[record.kind] : draft[record.kind];
+        const existing = items.find(item => item.id === record.id);
+        if (!existing) { draft.sharedIds[record.kind] = draft.sharedIds[record.kind].filter(value => value !== record.id); continue; }
+        if (record.kind === 'entries') {
+          if (existing.status === 'pending') continue;
+          if (draft.business.invoices.some(inv => inv.status !== 'void' && inv.lines.some(line => line.entryId === record.id))) continue;
+        }
+        if (['clients', 'projects', 'tasks'].includes(record.kind)) {
+          const field = `${record.kind.slice(0, -1)}Id`;
+          const dependents = [...draft.entries, ...draft.sessions, ...draft.projects, ...draft.tasks, ...draft.rules, ...draft.business.contracts, ...draft.business.allocations, ...(draft.timer ? [draft.timer] : [])];
+          if (dependents.some(item => item[field] === record.id)) continue;
+          deleteEntity(draft, record.kind.slice(0, -1), { id: record.id });
+        } else if (record.kind === 'invoices') {
+          // Accounting snapshots and invoice numbers remain an audit record even after remote deletion.
+          continue;
+        } else items.splice(items.indexOf(existing), 1);
+        draft.sharedIds[record.kind] = draft.sharedIds[record.kind].filter(value => value !== record.id);
+      }
+      // Imported invoice sequences cannot make local numbers reusable.
+      draft.business.nextInvoiceNumber = Math.max(draft.business.nextInvoiceNumber, ...draft.business.invoices.map(invoice => invoice.sequence + 1));
       return commit(draft, timestamp());
     },
     exportSnapshot() { return checkpoint(state, timestamp()); },
