@@ -1,0 +1,399 @@
+{
+  "generatedFrom": "Installed production dependency graph declared by package.json (dependencies and installed optional dependencies only; no devDependencies traversal)",
+  "packages": [
+    {
+      "name": "@fontsource/lato",
+      "version": "5.3.0",
+      "declaredLicense": "OFL-1.1",
+      "directDependency": true,
+      "installedPath": "node_modules/@fontsource/lato",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/fontsource-lato-5.3.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "@paymoapp/active-window",
+      "version": "2.2.0",
+      "declaredLicense": "MIT",
+      "directDependency": true,
+      "installedPath": "node_modules/@paymoapp/active-window",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/paymoapp-active-window-2.2.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "argparse",
+      "version": "2.0.1",
+      "declaredLicense": "Python-2.0",
+      "directDependency": false,
+      "installedPath": "node_modules/argparse",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/argparse-2.0.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "builder-util-runtime",
+      "version": "9.7.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/builder-util-runtime",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/builder-util-runtime-9.7.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "debug",
+      "version": "4.4.3",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/debug",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/debug-4.4.3.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "electron-updater",
+      "version": "6.8.9",
+      "declaredLicense": "MIT",
+      "directDependency": true,
+      "installedPath": "node_modules/electron-updater",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/electron-updater-6.8.9.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "fs-extra",
+      "version": "10.1.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/fs-extra",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/fs-extra-10.1.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "graceful-fs",
+      "version": "4.2.11",
+      "declaredLicense": "ISC",
+      "directDependency": false,
+      "installedPath": "node_modules/graceful-fs",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/graceful-fs-4.2.11.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "js-tokens",
+      "version": "4.0.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/js-tokens",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/js-tokens-4.0.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/js-yaml",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/js-yaml-4.3.2.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "jsonfile",
+      "version": "6.2.1",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/jsonfile",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/jsonfile-6.2.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "lazy-val",
+      "version": "1.0.5",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/lazy-val",
+      "sourceLicenseFiles": [],
+      "noticeFile": "docs/licenses/lazy-val-1.0.5.txt",
+      "standaloneLicensePresent": false
+    },
+    {
+      "name": "lodash.escaperegexp",
+      "version": "4.1.2",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/lodash.escaperegexp",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/lodash.escaperegexp-4.1.2.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "lodash.isequal",
+      "version": "4.5.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/lodash.isequal",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/lodash.isequal-4.5.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/loose-envify",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/loose-envify-1.4.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "ms",
+      "version": "2.1.3",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/ms",
+      "sourceLicenseFiles": [
+        "license.md"
+      ],
+      "noticeFile": "docs/licenses/ms-2.1.3.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "node-gyp-build",
+      "version": "4.8.4",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/node-gyp-build",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/node-gyp-build-4.8.4.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "node-ical",
+      "version": "0.27.3",
+      "declaredLicense": "Apache-2.0",
+      "directDependency": true,
+      "installedPath": "node_modules/node-ical",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/node-ical-0.27.3.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "object-assign",
+      "version": "4.1.1",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/object-assign",
+      "sourceLicenseFiles": [
+        "license"
+      ],
+      "noticeFile": "docs/licenses/object-assign-4.1.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "prop-types",
+      "version": "15.8.1",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/prop-types",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/prop-types-15.8.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "react",
+      "version": "19.2.0",
+      "declaredLicense": "MIT",
+      "directDependency": true,
+      "installedPath": "node_modules/react",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/react-19.2.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "react-dom",
+      "version": "19.2.0",
+      "declaredLicense": "MIT",
+      "directDependency": true,
+      "installedPath": "node_modules/react-dom",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/react-dom-19.2.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "react-feather",
+      "version": "2.0.10",
+      "declaredLicense": "MIT",
+      "directDependency": true,
+      "installedPath": "node_modules/react-feather",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/react-feather-2.0.10.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "react-is",
+      "version": "16.13.1",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/react-is",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/react-is-16.13.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "rrule-temporal",
+      "version": "2.2.8",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/rrule-temporal",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/rrule-temporal-2.2.8.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "sax",
+      "version": "1.6.1",
+      "declaredLicense": "BlueOak-1.0.0",
+      "directDependency": false,
+      "installedPath": "node_modules/sax",
+      "sourceLicenseFiles": [
+        "LICENSE.md"
+      ],
+      "noticeFile": "docs/licenses/sax-1.6.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "scheduler",
+      "version": "0.27.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/scheduler",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/scheduler-0.27.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "semver",
+      "version": "7.7.4",
+      "declaredLicense": "ISC",
+      "directDependency": false,
+      "installedPath": "node_modules/electron-updater/node_modules/semver",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/semver-7.7.4.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "temporal-polyfill",
+      "version": "1.0.6",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/temporal-polyfill",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/temporal-polyfill-1.0.6.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "temporal-spec",
+      "version": "1.0.1",
+      "declaredLicense": "Apache-2.0",
+      "directDependency": false,
+      "installedPath": "node_modules/temporal-spec",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/temporal-spec-1.0.1.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "temporal-utils",
+      "version": "1.0.3",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/temporal-utils",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/temporal-utils-1.0.3.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "tiny-typed-emitter",
+      "version": "2.1.0",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/tiny-typed-emitter",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/tiny-typed-emitter-2.1.0.txt",
+      "standaloneLicensePresent": true
+    },
+    {
+      "name": "universalify",
+      "version": "2.0.1",
+      "declaredLicense": "MIT",
+      "directDependency": false,
+      "installedPath": "node_modules/universalify",
+      "sourceLicenseFiles": [
+        "LICENSE"
+      ],
+      "noticeFile": "docs/licenses/universalify-2.0.1.txt",
+      "standaloneLicensePresent": true
+    }
+  ]
+}
