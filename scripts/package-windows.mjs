@@ -66,11 +66,12 @@ for (const addon of addons) await assertPe64(path.join(addonFolder, addon));
 for (const document of ['README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'docs/RECONSTRUCTION.md']) {
   if (await exists(path.join(root, document))) await fs.copyFile(path.join(root, document), path.join(folder, path.basename(document)));
 }
-await fs.writeFile(path.join(folder, 'START-HERE.txt'), `RIZE LOCAL — WINDOWS x64\r\n\r\nExtract the entire ZIP to a folder, then open RizeLocal.exe.\r\nKeep its resources and other files beside the executable.\r\n\r\nThis is an independent reconstruction, not an official Rize application.\r\nThe first-run screen lets you create a local workspace or explore sample data.\r\nAutomatic activity collection starts only after you explicitly enable it in Settings.\r\nData stays on this PC; use Settings to export a JSON backup or workspace CSV.\r\nThe native executable has not been code-signed.\r\n\r\nSource code is included in rize-local-source.zip.\r\n`);
+await fs.cp(path.join(root, 'docs', 'licenses'), path.join(folder, 'licenses'), { recursive: true, dereference: false });
+await fs.writeFile(path.join(folder, 'START-HERE.txt'), `RIZE LOCAL — WINDOWS x64\r\n\r\nExtract the entire ZIP to a folder, then open RizeLocal.exe.\r\nKeep its resources and other files beside the executable.\r\n\r\nThis is an independent reconstruction, not an official Rize application.\r\nThe first-run screen lets you create a local workspace or explore sample data.\r\nAutomatic activity collection starts only after you explicitly enable it in Settings.\r\nData starts local. Optional team/AI integrations share reviewed records only with configured services. Use Settings to export a JSON backup or workspace CSV.\r\nThe native executable has not been code-signed.\r\n\r\nSource code is included in rize-local-source.zip.\r\n`);
 await fs.writeFile(path.join(folder, 'BUILD-INFO.json'), `${JSON.stringify({ appVersion: manifest.version, electron: runtime.version, platform: 'win32', architecture: 'x64', officialRuntimeSha256: runtime.sha256, builtAt: new Date().toISOString(), signed: false }, null, 2)}\n`);
 runPython(`import os,sys,zipfile
 root,target=sys.argv[1:]
-allowed=['src','public','desktop','native','scripts','tests','docs','.github']
+allowed=['src','public','desktop','native','scripts','tests','docs','server','.github']
 files=['package.json','package-lock.json','index.html','vite.config.mjs','README.md','LICENSE','THIRD-PARTY-NOTICES.md','.gitignore']
 with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
     for name in files:
